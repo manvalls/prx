@@ -52,7 +52,7 @@ Above shown are defaults. You can also use the command line utility, which will 
 sudo prx
 ```
 
-Using `sudo`grants you permission to use ports `80` and `443`.
+Using `sudo` grants you permission to use ports `80` and `443`.
 
 [ci-img]: https://circleci.com/gh/manvalls/prx.svg?style=shield
 [ci-url]: https://circleci.com/gh/manvalls/prx

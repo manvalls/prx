@@ -4,7 +4,6 @@ machine:
   hosts:
     sample.host.com: 127.0.0.1
     host.com: 127.0.0.1
-  services:
 dependencies:
   pre:
     - source /etc/lsb-release && echo "deb http://download.rethinkdb.com/apt $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/rethinkdb.list

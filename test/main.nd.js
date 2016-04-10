@@ -26,28 +26,28 @@ t('Main tests',function*(){
         host: '*.host.com'
       },
       to: {
-        port: 1123,
+        port: 4321,
         proxyProtocol: 1,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 1123,
+        port: 4321,
         host: 'host.com'
       },
       to: {
-        port: 1231,
+        port: 12345,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 1123,
+        port: 4321,
         host: 'sample.host.com'
       },
       to: {
-        port: 1232,
+        port: 12346,
         host: '127.0.0.1'
       }
     },
@@ -57,7 +57,7 @@ t('Main tests',function*(){
         host: 'sample.host.com'
       },
       to: {
-        port: 1233,
+        port: 12347,
         host: '127.0.0.1'
       }
     }
@@ -70,9 +70,9 @@ t('Main tests',function*(){
     cert: fs.readFileSync(__dirname + '/cert.pem')
   });
 
-  sampleHttp.listen(1232);
-  hostHttp.listen(1231);
-  sampleHttps.listen(1233);
+  sampleHttp.listen(12346);
+  hostHttp.listen(12345);
+  sampleHttps.listen(12347);
 
   sampleHttp.on('request',function(req,res){
     res.end('sample');
@@ -113,28 +113,28 @@ t('Main tests',function*(){
         host: '*.host.com'
       },
       to: {
-        port: 1123,
+        port: 4321,
         proxyProtocol: 1,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 1123,
+        port: 4321,
         host: 'host.com'
       },
       to: {
-        port: 1231,
+        port: 12345,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 1123,
+        port: 4321,
         host: 'sample.host.com'
       },
       to: {
-        port: 1232,
+        port: 12346,
         host: '127.0.0.1'
       }
     },
@@ -144,7 +144,7 @@ t('Main tests',function*(){
         host: 'sample.host.com'
       },
       to: {
-        port: 1233,
+        port: 12347,
         host: '127.0.0.1'
       }
     }

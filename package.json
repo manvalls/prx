@@ -1,0 +1,31 @@
+{
+  "name": "prx",
+  "version": "1.0.0",
+  "description": "A simple reverse proxy",
+  "main": "main.js",
+  "bin": "bin.js",
+  "dependencies": {
+    "binary-buffer": "^5.1.2",
+    "ip": "^1.1.2",
+    "rethinkdb": "^2.3.0",
+    "y-callback": "^1.2.3",
+    "y-walk": "^10.0.3"
+  },
+  "devDependencies": {
+    "findhit-proxywrap": "^0.3.11",
+    "u-test": "^3.7.0",
+    "y-timers": "^1.1.2"
+  },
+  "scripts": {
+    "test": "u-test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/manvalls/prx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/manvalls/prx/issues"
+  },
+  "author": "Manuel Valls Fernández <manolo@vlrz.es>",
+  "license": "LGPL-3.0"
+}

@@ -71,6 +71,8 @@ function* processPrx(prx,host,opt){
     while(true){
 
       change = yield cursor.next();
+      oldRule = null;
+      oldHost = null;
 
       if(change.old_val){
 

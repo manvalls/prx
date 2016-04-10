@@ -22,42 +22,42 @@ t('Main tests',function*(){
   yield r.db('prx').table('rules').insert([
     {
       from: {
-        port: 8000,
+        port: 8004,
         host: '*.host.com'
       },
       to: {
-        port: 4321,
+        port: 8005,
         proxyProtocol: 1,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 4321,
+        port: 8005,
         host: 'host.com'
       },
       to: {
-        port: 12345,
+        port: 8002,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 4321,
+        port: 8005,
         host: 'sample.host.com'
       },
       to: {
-        port: 12346,
+        port: 8001,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 4433,
+        port: 8006,
         host: 'sample.host.com'
       },
       to: {
-        port: 12347,
+        port: 8003,
         host: '127.0.0.1'
       }
     }
@@ -70,9 +70,9 @@ t('Main tests',function*(){
     cert: fs.readFileSync(__dirname + '/cert.pem')
   });
 
-  sampleHttp.listen(12346);
-  hostHttp.listen(12345);
-  sampleHttps.listen(12347);
+  sampleHttp.listen(8001);
+  hostHttp.listen(8002);
+  sampleHttps.listen(8003);
 
   sampleHttp.on('request',function(req,res){
     res.end('sample');
@@ -88,15 +88,15 @@ t('Main tests',function*(){
 
   yield wait(1000);
 
-  http.get('http://sample.host.com:8000/',cb = Cb());
+  http.get('http://sample.host.com:8004/',cb = Cb());
   assert.equal(yield (yield cb)[0],'sample');
 
-  http.get('http://host.com:8000/',cb = Cb());
+  http.get('http://host.com:8004/',cb = Cb());
   assert.equal(yield (yield cb)[0],'host');
 
   https.get({
     host: 'sample.host.com',
-    port: 4433,
+    port: 8006,
     path: '/',
     agent: new https.Agent({rejectUnauthorized: false})
   },cb = Cb());
@@ -109,42 +109,42 @@ t('Main tests',function*(){
   yield r.db('prx').table('rules').insert([
     {
       from: {
-        port: 8000,
+        port: 8004,
         host: '*.host.com'
       },
       to: {
-        port: 4321,
+        port: 8005,
         proxyProtocol: 1,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 4321,
+        port: 8005,
         host: 'host.com'
       },
       to: {
-        port: 12345,
+        port: 8002,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 4321,
+        port: 8005,
         host: 'sample.host.com'
       },
       to: {
-        port: 12346,
+        port: 8001,
         host: '127.0.0.1'
       }
     },
     {
       from: {
-        port: 4433,
+        port: 8006,
         host: 'sample.host.com'
       },
       to: {
-        port: 12347,
+        port: 8003,
         host: '127.0.0.1'
       }
     }
@@ -153,15 +153,15 @@ t('Main tests',function*(){
   conn.close();
   yield wait(1000);
 
-  http.get('http://sample.host.com:8000/',cb = Cb());
+  http.get('http://sample.host.com:8004/',cb = Cb());
   assert.equal(yield (yield cb)[0],'sample');
 
-  http.get('http://host.com:8000/',cb = Cb());
+  http.get('http://host.com:8004/',cb = Cb());
   assert.equal(yield (yield cb)[0],'host');
 
   https.get({
     host: 'sample.host.com',
-    port: 4433,
+    port: 8006,
     path: '/',
     agent: new https.Agent({rejectUnauthorized: false})
   },cb = Cb());

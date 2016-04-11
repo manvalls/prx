@@ -33,6 +33,17 @@ t('Main tests',function*(){
     },
     {
       from: {
+        port: 8004,
+        host: '*.host.com'
+      },
+      to: {
+        port: 8800,
+        proxyProtocol: 2,
+        host: '127.0.0.1'
+      }
+    },
+    {
+      from: {
         port: 8005,
         host: 'host.com'
       },

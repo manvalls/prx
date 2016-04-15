@@ -1,6 +1,6 @@
 # PRX [![Build Status][ci-img]][ci-url] [![Coverage Status][cover-img]][cover-url]
 
-PRX is a simple TCP reverse proxy with support for HAProxy's PROXY protocol versions 1 and 2 and out of the box support for HTTP (including WebSockets) and TLS with SNI. For other types of streams, send the following string either at the start of it or after a CRLF:
+PRX is a simple TCP reverse proxy with support for HAProxy's PROXY protocol versions 1 and 2 and out of the box support for HTTP (including WebSockets) and TLS. For other types of streams, send the following string either at the start of it or after a CRLF:
 
 ```
 host: your.host.com\r\n
@@ -16,13 +16,33 @@ PRX's configuration is kept inside a RethinkDB server and can be updated at runt
   },
   "to": {
     "port": 1234,
-    "host": "127.0.0.1",
+    "host": "77.231.239.251",
     "proxyProtocol": 1
   }
 }
 ```
 
 Wildcards are allowed in the `host` field, e.g `*.host.com`. `proxyProtocol` can be `1` or `2` depending on the desired PROXY protocol version. It can be omitted in order to disable the PROXY protocol header. When two or more rules match the same origin port and host round robin applies, with automatic failover in case a TCP connection can't be established.
+
+Note that by default TLS connections don't terminate on PRX and are routed instead to backend servers. You can force TLS decryption and encryption at PRX's side by adding the `tls` option to the `from` block, with the format expected by `tls.createSecureContext()`:
+
+```json
+{
+  "from": {
+    "port": 443,
+    "host": "your.host.com",
+    "tls": {
+      "key": "...",
+      "cert": "..."
+    }
+  },
+  "to": {
+    "port": 1234,
+    "host": "77.231.239.251",
+    "proxyProtocol": 1
+  }
+}
+```
 
 As long as a rule is found in the database PRX will try to connect to it when it needs to do so, no matter how many times it has failed in the past. It is the user's duty to remove a rule from the database when it no longer applies. PRX's API is pretty simple:
 

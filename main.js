@@ -2,6 +2,7 @@
 var r = require('rethinkdb'),
     walk = require('y-walk'),
     net = require('net'),
+    tls = require('tls'),
     Cb = require('y-callback'),
     proxyProtocol = require('./main/proxyProtocol.js'),
     bindServer = require('./main/bindServer.js'),
@@ -104,7 +105,7 @@ function* processPrx(prx,host,opt){
           if(!('listening' in events)) continue;
 
           srv.add(rule.server);
-          bindServer(rule.server).on('connection',proxy,rule.hosts = {});
+          bindServer(rule.server).on('connection',proxy,rule.hosts = {},rule.server);
         }else rule = rules[change.new_val.from.port || 0];
 
         rule.hosts[change.new_val.from.host] = rule.hosts[change.new_val.from.host] || {
@@ -138,7 +139,7 @@ function find(backend){
   return backend.id == this.id;
 }
 
-function* proxy(e,d,hosts){
+function* proxy(e,d,hosts,server){
   var parts,target,backend,
       host,socket,events;
 
@@ -181,6 +182,22 @@ function* proxy(e,d,hosts){
     return;
   }
 
+  if(backend.from.tls){
+
+    try{
+
+      e.socket = new tls.TLSSocket(e.socket,{
+        secureContext: tls.createSecureContext(backend.from.tls),
+        isServer: true
+      });
+
+    }catch(e){
+      e.socket.destroy();
+      return;
+    }
+
+  }
+
   switch(backend.to.proxyProtocol){
 
     case 1:
@@ -193,6 +210,7 @@ function* proxy(e,d,hosts){
 
   }
 
+  socket.write(e.proxyHeader);
   socket.pipe(e.socket).pipe(socket);
   socket[otherSocket] = e.socket;
   e.socket[otherSocket] = socket;

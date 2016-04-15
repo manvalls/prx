@@ -45,13 +45,14 @@ function onData(data){
 
 processSocket = walk.wrap(function*(buffer,socket,emitter){
   var queue = [],
-      b,line,m,host,
+      proxy = [],
+      b,pb,line,m,host,
       i,length;
 
   while(true){
 
     b = yield buffer.read(new Buffer(5));
-    queue.push(b);
+    proxy.push(b);
 
     if(b.toString() == 'PROXY'){
 
@@ -59,23 +60,25 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
 
       do{
         b = yield buffer.read(new Buffer(1));
-        queue.push(b);
+        proxy.push(b);
       }while(b[0] != 0x0d);
 
-      queue.push(yield buffer.read(new Buffer(1)));
+      proxy.push(yield buffer.read(new Buffer(1)));
 
     }else if(b.toString('hex') == '0d0a0d0a00'){
 
       // PROXY protocol version 2
 
-      queue.push(yield buffer.read(new Buffer(9)));
+      proxy.push(yield buffer.read(new Buffer(9)));
       b = yield buffer.read(new Buffer(2));
-      queue.push(b);
-      queue.push(yield buffer.read(new Buffer(b.readUInt16BE(0))));
+      proxy.push(b);
+      proxy.push(yield buffer.read(new Buffer(b.readUInt16BE(0))));
 
     }else break;
 
   }
+
+  queue.push(proxy.pop());
 
   if(b[0] == 22){
 
@@ -127,10 +130,7 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
 
       }
 
-    }catch(e){
-      onError.call(socket);
-      return;
-    }
+    }catch(e){ host = 'unknown'; }
 
   }else{
 
@@ -183,18 +183,20 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
 
   detach(socket);
   b = Buffer.concat(queue);
+  pb = Buffer.concat(proxy);
   socket.unshift(
     Buffer.concat(
       [
         b,
-        yield buffer.read(new Buffer(buffer.bytesSinceFlushed - b.length))
+        yield buffer.read(new Buffer(buffer.bytesSinceFlushed - b.length - pb.length))
       ]
     )
   );
 
   emitter.give('connection',{
     socket: socket,
-    host: host
+    host: host,
+    proxyHeader: pb
   });
 
 });

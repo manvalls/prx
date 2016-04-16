@@ -5,7 +5,6 @@ var t = require('u-test'),
     net = require('net'),
     https = require('https'),
     fs = require('fs'),
-    proxiedHttp = require('findhit-proxywrap').proxy(http),
     wait = require('y-timers/wait'),
     Cb = require('y-callback'),
     Prx = require('../main.js');
@@ -44,8 +43,31 @@ t('Main tests',function*(){
     },
     {
       from: {
+        port: 9003
+      },
+      to: {
+        port: 9004,
+        host: '127.0.0.1',
+        prependHost: 'sample.host.com'
+      }
+    },
+    {
+      from: {
+        port: 9004,
+        host: 'sample.host.com',
+        address: '127.0.0.1'
+      },
+      to: {
+        port: 8001,
+        host: '127.0.0.1',
+        stripHost: true
+      }
+    },
+    {
+      from: {
         port: 8004,
-        host: '*.host.com'
+        host: '*.host.com',
+        address: '127.0.0.1'
       },
       to: {
         port: 8005,
@@ -56,7 +78,8 @@ t('Main tests',function*(){
     {
       from: {
         port: 8004,
-        host: '*.host.com'
+        host: '*.host.com',
+        address: '127.0.0.1'
       },
       to: {
         port: 8800,
@@ -71,7 +94,8 @@ t('Main tests',function*(){
       },
       to: {
         port: 8002,
-        host: '127.0.0.1'
+        host: '127.0.0.1',
+        stripProxy: true
       }
     },
     {
@@ -81,13 +105,14 @@ t('Main tests',function*(){
       },
       to: {
         port: 8001,
-        host: '127.0.0.1'
+        host: '127.0.0.1',
+        stripProxy: true
       }
     },
     {
       from: {
         port: 8006,
-        host: 'sample.host.com'
+        host: '*'
       },
       to: {
         port: 8003,
@@ -97,7 +122,6 @@ t('Main tests',function*(){
     {
       from: {
         port: 8007,
-        host: 'sample.host.com',
         tls: {
           key: fs.readFileSync(__dirname + '/key.pem').toString(),
           cert: fs.readFileSync(__dirname + '/cert.pem').toString()
@@ -105,15 +129,14 @@ t('Main tests',function*(){
       },
       to: {
         port: 8001,
-        host: '127.0.0.1',
-        proxyProtocol: 1
+        host: '127.0.0.1'
       }
     }
   ]).run(conn);
 
   v2Net = net.createServer();
-  sampleHttp = proxiedHttp.createServer();
-  hostHttp = proxiedHttp.createServer();
+  sampleHttp = http.createServer();
+  hostHttp = http.createServer();
   sampleHttps = https.createServer({
     key: fs.readFileSync(__dirname + '/key.pem'),
     cert: fs.readFileSync(__dirname + '/cert.pem')
@@ -158,11 +181,14 @@ hello world`
   http.get('http://sample.host.com:8004/',cb = Cb());
   assert.equal(yield (yield cb)[0],'sample');
 
+  http.get('http://sample.host.com:9003/',cb = Cb());
+  assert.equal(yield (yield cb)[0],'sample');
+
   http.get('http://host.com:8004/',cb = Cb());
   assert.equal(yield (yield cb)[0],'host');
 
   https.get({
-    host: 'sample.host.com',
+    host: '127.0.0.1',
     port: 8006,
     path: '/',
     agent: new https.Agent({rejectUnauthorized: false})
@@ -201,7 +227,8 @@ hello world`
       },
       to: {
         port: 8002,
-        host: '127.0.0.1'
+        host: '127.0.0.1',
+        stripProxy: true
       }
     },
     {
@@ -211,7 +238,8 @@ hello world`
       },
       to: {
         port: 8001,
-        host: '127.0.0.1'
+        host: '127.0.0.1',
+        stripProxy: true
       }
     },
     {
@@ -235,8 +263,7 @@ hello world`
       },
       to: {
         port: 8001,
-        host: '127.0.0.1',
-        proxyProtocol: 1
+        host: '127.0.0.1'
       }
     }
   ]).run(conn);

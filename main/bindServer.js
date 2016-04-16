@@ -3,18 +3,34 @@ var Emitter = require('y-emitter'),
     walk = require('y-walk'),
     emitter = Symbol(),
     buffer = Symbol(),
+    hostsMap = Symbol(),
     processSocket;
 
-function bindServer(server){
+function bindServer(server,hosts){
   var em = new Emitter();
 
+  server[hostsMap] = hosts;
   server[emitter] = em;
   server.on('connection',onConnection);
   return em.target;
 }
 
 function onConnection(socket){
-  var em = this[emitter];
+  var em = this[emitter],
+      hosts = this[hostsMap];
+
+  if(hosts['']){
+
+    em.give('connection',{
+      socket: socket,
+      host: '',
+      proxyHeader: new Buffer(0),
+      hostHeader: new Buffer(0),
+      rest: new Buffer(0)
+    });
+
+    return;
+  }
 
   socket[buffer] = new BinaryBuffer();
   processSocket(socket[buffer],socket,em);
@@ -130,7 +146,7 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
 
       }
 
-    }catch(e){ host = 'unknown'; }
+    }catch(e){ host = ''; }
 
   }else{
 
@@ -184,19 +200,13 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
   detach(socket);
   b = Buffer.concat(queue);
   pb = Buffer.concat(proxy);
-  socket.unshift(
-    Buffer.concat(
-      [
-        b,
-        yield buffer.read(new Buffer(buffer.bytesSinceFlushed - b.length - pb.length))
-      ]
-    )
-  );
 
   emitter.give('connection',{
     socket: socket,
     host: host,
-    proxyHeader: pb
+    proxyHeader: pb,
+    hostHeader: b,
+    rest: yield buffer.read(new Buffer(buffer.bytesSinceFlushed - b.length - pb.length))
   });
 
 });

@@ -59,7 +59,7 @@ function* processPrx(prx,host,opt){
   var rules = {},
       srv = prx[servers],
       conn,cursor,change,events,
-      rule,oldRule,oldHost,i;
+      rule,oldRule,oldHost,i,key;
 
   opt = fillOpt(opt);
 
@@ -79,8 +79,9 @@ function* processPrx(prx,host,opt){
 
         change.old_val.from = change.old_val.from || {};
         change.old_val.to = change.old_val.to || {};
+        key = (change.old_val.from.address || '') + ':' + (change.old_val.from.port || 0);
 
-        oldRule = rules[change.old_val.from.port || 0];
+        oldRule = rules[key];
         if(oldRule && (oldHost = oldRule.hosts[change.old_val.from.host])){
           i = oldHost.backends.findIndex(find,change.old_val);
           if(i != -1) oldHost.backends.splice(i,1);
@@ -91,10 +92,17 @@ function* processPrx(prx,host,opt){
 
         change.new_val.from = change.new_val.from || {};
         change.new_val.to = change.new_val.to || {};
+        key = (change.new_val.from.address || '') + ':' + (change.new_val.from.port || 0);
 
-        if(!rules[change.new_val.from.port || 0]){
-          rules[change.new_val.from.port || 0] = rule = {port: change.new_val.from.port || 0};
-          rule.server = net.createServer().listen(change.new_val.from.port || 0);
+        if(!rules[key]){
+          rules[key] = rule = {key: key};
+          rule.server = net.createServer();
+
+          if(change.new_val.from.address) rule.server.listen(
+            change.new_val.from.port || 0,
+            change.new_val.from.address
+          );
+          else rule.server.listen(change.new_val.from.port || 0);
 
           events = {};
           rule.server.once('listening',events.listening = Cb());
@@ -104,23 +112,24 @@ function* processPrx(prx,host,opt){
           events = yield events;
           if(!('listening' in events)) continue;
 
+          rule.hosts = {};
           srv.add(rule.server);
-          bindServer(rule.server).on('connection',proxy,rule.hosts = {},rule.server);
-        }else rule = rules[change.new_val.from.port || 0];
+          bindServer(rule.server,rule.hosts).on('connection',proxy,rule.hosts,rule.server);
+        }else rule = rules[key];
 
-        rule.hosts[change.new_val.from.host] = rule.hosts[change.new_val.from.host] || {
+        rule.hosts[change.new_val.from.host || ''] = rule.hosts[change.new_val.from.host || ''] || {
           backends: [],
-          host: change.new_val.from.host
+          host: change.new_val.from.host || ''
         };
 
-        rule.hosts[change.new_val.from.host].backends.push(change.new_val);
+        rule.hosts[change.new_val.from.host || ''].backends.push(change.new_val);
 
       }
 
       if(oldHost && !oldHost.backends.length){
         delete oldRule.hosts[oldHost.host];
         if(!Object.keys(oldRule.hosts).length){
-          delete rules[oldRule.port];
+          delete rules[oldRule.key];
           srv.delete(oldRule.server);
           oldRule.server.close();
         }
@@ -182,6 +191,9 @@ function* proxy(e,d,hosts,server){
     return;
   }
 
+  e.socket.unshift(e.rest);
+  if(!backend.to.stripHost) e.socket.unshift(e.hostHeader);
+
   if(backend.from.tls){
 
     try{
@@ -210,7 +222,9 @@ function* proxy(e,d,hosts,server){
 
   }
 
-  socket.write(e.proxyHeader);
+  if(!backend.to.stripProxy) socket.write(e.proxyHeader);
+  if(backend.to.prependHost) socket.write('host: ' + backend.to.prependHost + '\r\n');
+
   socket.pipe(e.socket).pipe(socket);
   socket[otherSocket] = e.socket;
   e.socket[otherSocket] = socket;

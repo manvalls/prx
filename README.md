@@ -1,6 +1,7 @@
-# PRX [![Build Status][ci-img]][ci-url] [![Coverage Status][cover-img]][cover-url]
+# PRX
+[![Build Status][ci-img]][ci-url] [![Coverage Status][cover-img]][cover-url]
 
-PRX is a simple TCP reverse proxy with support for HAProxy's PROXY protocol versions 1 and 2 and out of the box support for HTTP (including WebSockets) and TLS. For other types of streams, send the following string either at the start of it or after a CRLF:
+PRX is a simple TCP reverse proxy with support for HAProxy's PROXY protocol versions 1 and 2 and out of the box host detection support for HTTP (including WebSockets) and TLS. For other types of streams, send the following string either at the start of it or after a CRLF for PRX to detect the host:
 
 ```
 host: your.host.com\r\n
@@ -12,17 +13,25 @@ PRX's configuration is kept inside a RethinkDB server and can be updated at runt
 {
   "from": {
     "port": 80,
-    "host": "your.host.com"
+    "host": "your.host.com",
+    "address": "0.0.0.0"
   },
   "to": {
     "port": 1234,
     "host": "77.231.239.251",
-    "proxyProtocol": 1
+    "proxyProtocol": 1,
+    "stripProxy": false,
+    "stripHost": false,
+    "prependHost": "foo.bar"
   }
 }
 ```
 
-Wildcards are allowed in the `host` field, e.g `*.host.com`. `proxyProtocol` can be `1` or `2` depending on the desired PROXY protocol version. It can be omitted in order to disable the PROXY protocol header. When two or more rules match the same origin port and host round robin applies, with automatic failover in case a TCP connection can't be established.
+If `address` is omitted PRX will listen on all network interfaces. When two or more rules match the same origin port, address and host, round robin applies, with automatic failover in case a TCP connection can't be established.
+
+Wildcards are allowed in the `host` field, e.g `*.host.com`. If it's omitted the stream will be routed without trying to find host information, directly to specified backends. If `prependHost` is specified, a host string will be prepended to the stream, e.g `host: foo.bar\r\n`. If `stripHost` is set to `true`, the part of the stream used to find destination host will be stripped, i.e the first TLS packet or the host string.
+
+`proxyProtocol` can be `1` or `2` depending on the desired PROXY protocol version. It can be omitted in order to disable the PROXY protocol header. If `stripProxy` is set to `true`, previously existing PROXY protocol headers will be stripped.
 
 Note that by default TLS connections don't terminate on PRX and are routed instead to backend servers. You can force TLS decryption and encryption at PRX's side by adding the `tls` option to the `from` block, with the format expected by `tls.createSecureContext()`:
 
@@ -37,9 +46,8 @@ Note that by default TLS connections don't terminate on PRX and are routed inste
     }
   },
   "to": {
-    "port": 1234,
-    "host": "77.231.239.251",
-    "proxyProtocol": 1
+    "port": 4321,
+    "host": "127.0.0.1"
   }
 }
 ```

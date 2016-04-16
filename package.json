@@ -12,7 +12,6 @@
     "y-walk": "^10.0.5"
   },
   "devDependencies": {
-    "findhit-proxywrap": "^0.3.11",
     "u-test": "^3.7.2",
     "y-timers": "^1.1.2"
   },

@@ -203,7 +203,7 @@ function* proxy(e,d,hosts,server){
         isServer: true
       });
 
-    }catch(e){
+    }catch(err){
       e.socket.destroy();
       return;
     }

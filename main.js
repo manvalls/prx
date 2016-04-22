@@ -82,7 +82,7 @@ function* processPrx(prx,host,opt){
         key = (change.old_val.from.address || '') + ':' + (change.old_val.from.port || 0);
 
         oldRule = rules[key];
-        if(oldRule && (oldHost = oldRule.hosts[change.old_val.from.host])){
+        if(oldRule && (oldHost = oldRule.hosts[change.old_val.from.host || ''])){
           i = oldHost.backends.findIndex(find,change.old_val);
           if(i != -1) oldHost.backends.splice(i,1);
         }
@@ -127,7 +127,7 @@ function* processPrx(prx,host,opt){
       }
 
       if(oldHost && !oldHost.backends.length){
-        delete oldRule.hosts[oldHost.host];
+        delete oldRule.hosts[oldHost.host || ''];
         if(!Object.keys(oldRule.hosts).length){
           delete rules[oldRule.key];
           srv.delete(oldRule.server);
@@ -152,7 +152,7 @@ function* proxy(e,d,hosts,server){
   var parts,target,backend,
       host,socket,events;
 
-  if(hosts[e.host]) target = hosts[e.host];
+  if(hosts[e.host || '']) target = hosts[e.host || ''];
   else{
 
     parts = e.host.split('.');

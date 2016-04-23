@@ -27,7 +27,7 @@ PRX's configuration is kept inside a RethinkDB server and can be updated at runt
 }
 ```
 
-If `address` is omitted PRX will listen on all network interfaces. When two or more rules match the same origin port, address and host, round robin applies, with automatic failover in case a TCP connection can't be established.
+If `address` is omitted PRX will listen on all network interfaces. When two or more rules match the same origin port, address and host, requests are randomly distributed according to rule's weight, with automatic failover in case a TCP connection can't be established. The `weight` property of the `to` block determines the rule's weight. It's an unsigned integer in the `[0-255]` range, `1` by default.
 
 Wildcards are allowed in the `host` field, e.g `*.host.com`. If it's omitted the stream will be routed without trying to find host information, directly to specified backends. If `prependHost` is specified, a host string will be prepended to the stream, e.g `host: foo.bar\r\n`. If `stripHost` is set to `true`, the part of the stream used to find destination host will be stripped, i.e the first TLS packet or the host string.
 
@@ -48,6 +48,34 @@ Note that by default TLS connections don't terminate on PRX and are routed inste
   "to": {
     "port": 4321,
     "host": "127.0.0.1"
+  }
+}
+```
+
+You may also use string aliases, e.g:
+
+```json
+{
+  "from": {
+    "port": 80
+  },
+  "to": "backends"
+}
+```
+```json
+{
+  "from": "backends",
+  "to": {
+    "port": 8081,
+    "weight": 2
+  }
+}
+```
+```json
+{
+  "from": "backends",
+  "to": {
+    "port": 8082
   }
 }
 ```

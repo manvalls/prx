@@ -10,7 +10,9 @@ var r = require('rethinkdb'),
     connection = Symbol(),
     walker = Symbol(),
     servers = Symbol(),
-    feed = Symbol();
+    feed = Symbol(),
+    buff = new Buffer(1),
+    getDest;
 
 class Prx{
 
@@ -57,9 +59,10 @@ function fillOpt(opt){
 
 function* processPrx(prx,host,opt){
   var rules = {},
+      aliases = {},
       srv = prx[servers],
-      conn,cursor,change,events,
-      rule,oldRule,oldHost,i,key;
+      conn,cursor,change,events,a,h,
+      rule,oldRule,oldHost,i,key,w;
 
   opt = fillOpt(opt);
 
@@ -77,52 +80,92 @@ function* processPrx(prx,host,opt){
 
       if(change.old_val){
 
-        change.old_val.from = change.old_val.from || {};
-        change.old_val.to = change.old_val.to || {};
-        key = (change.old_val.from.address || '') + ':' + (change.old_val.from.port || 0);
+        change.old_val.from = change.old_val.from || '';
+        change.old_val.to = change.old_val.to || '';
 
-        oldRule = rules[key];
-        if(oldRule && (oldHost = oldRule.hosts[change.old_val.from.host || ''])){
-          i = oldHost.backends.findIndex(find,change.old_val);
-          if(i != -1) oldHost.backends.splice(i,1);
+        if(typeof change.old_val.from == 'string'){
+
+          if(a = aliases[change.old_val.from]){
+            i = a.findIndex(find,change.old_val);
+            while(i != -1){
+              a.splice(i,1);
+              if(!a.length) delete aliases[change.old_val.from];
+              i = a.findIndex(find,change.old_val);
+            }
+          }
+
+        }else{
+
+          key = (change.old_val.from.address || '') + ':' + (change.old_val.from.port || 0);
+
+          oldRule = rules[key];
+          if(oldRule && (oldHost = oldRule.hosts[change.old_val.from.host || ''])){
+            i = oldHost.backends.findIndex(find,change.old_val);
+            while(i != -1){
+              oldHost.backends.splice(i,1);
+              i = oldHost.backends.findIndex(find,change.old_val);
+            }
+          }
+
         }
+
       }
 
       if(change.new_val){
 
-        change.new_val.from = change.new_val.from || {};
-        change.new_val.to = change.new_val.to || {};
-        key = (change.new_val.from.address || '') + ':' + (change.new_val.from.port || 0);
+        change.new_val.from = change.new_val.from || '';
+        change.new_val.to = change.new_val.to || '';
 
-        if(!rules[key]){
-          rules[key] = rule = {key: key};
-          rule.server = net.createServer();
+        if(typeof change.new_val.from == 'string'){
 
-          if(change.new_val.from.address) rule.server.listen(
-            change.new_val.from.port || 0,
-            change.new_val.from.address
-          );
-          else rule.server.listen(change.new_val.from.port || 0);
+          if(typeof change.new_val.to == 'object'){
+            buff[0] = 'weight' in change.new_val.to ? change.new_val.to.weight : 1;
+            w = buff[0];
+          }else w = 1;
 
-          events = {};
-          rule.server.once('listening',events.listening = Cb());
-          rule.server.once('close',events.close = Cb());
-          rule.server.once('error',events.error = Cb());
+          a = aliases[change.new_val.from] = aliases[change.new_val.from] || [];
+          for(i = 0;i < w;i++) a.push(change.new_val);
 
-          events = yield events;
-          if(!('listening' in events)) continue;
+        }else{
 
-          rule.hosts = {};
-          srv.add(rule.server);
-          bindServer(rule.server,rule.hosts).on('connection',proxy,rule.hosts,rule.server);
-        }else rule = rules[key];
+          key = (change.new_val.from.address || '') + ':' + (change.new_val.from.port || 0);
 
-        rule.hosts[change.new_val.from.host || ''] = rule.hosts[change.new_val.from.host || ''] || {
-          backends: [],
-          host: change.new_val.from.host || ''
-        };
+          if(!rules[key]){
+            rules[key] = rule = {key: key};
+            rule.server = net.createServer();
 
-        rule.hosts[change.new_val.from.host || ''].backends.push(change.new_val);
+            if(change.new_val.from.address) rule.server.listen(
+              change.new_val.from.port || 0,
+              change.new_val.from.address
+            );
+            else rule.server.listen(change.new_val.from.port || 0);
+
+            events = {};
+            rule.server.once('listening',events.listening = Cb());
+            rule.server.once('close',events.close = Cb());
+            rule.server.once('error',events.error = Cb());
+
+            events = yield events;
+            if(!('listening' in events)) continue;
+
+            rule.hosts = {};
+            srv.add(rule.server);
+            bindServer(rule.server,rule.hosts).on('connection',proxy,rule.hosts,rule.server,aliases);
+          }else rule = rules[key];
+
+          if(typeof change.new_val.to == 'object'){
+            buff[0] = 'weight' in change.new_val.to ? change.new_val.to.weight : 1;
+            w = buff[0];
+          }else w = 1;
+
+          h = rule.hosts[change.new_val.from.host || ''] = rule.hosts[change.new_val.from.host || ''] || {
+            backends: [],
+            host: change.new_val.from.host || ''
+          };
+
+          for(i = 0;i < w;i++) h.backends.push(change.new_val);
+
+        }
 
       }
 
@@ -148,9 +191,9 @@ function find(backend){
   return backend.id == this.id;
 }
 
-function* proxy(e,d,hosts,server){
+function* proxy(e,d,hosts,server,aliases){
   var parts,target,backend,
-      host,socket,events;
+      host,dest;
 
   if(hosts[e.host || '']) target = hosts[e.host || ''];
   else{
@@ -170,36 +213,22 @@ function* proxy(e,d,hosts,server){
     return;
   }
 
-  target.backends.push(target.backends.shift());
+  dest = yield getDest(target.backends,aliases);
 
-  for(backend of target.backends){
-    if(!backend.to) continue;
-    socket = net.connect(backend.to.port,backend.to.host);
-    events = {};
-
-    socket.once('connect',events.connect = Cb());
-    socket.once('error',events.error = Cb());
-    socket.once('close',events.close = Cb());
-
-    events = yield events;
-    if('connect' in events) break;
-    socket = null;
-  }
-
-  if(!socket){
+  if(!dest){
     e.socket.destroy();
     return;
   }
 
   e.socket.unshift(e.rest);
-  if(!backend.to.stripHost) e.socket.unshift(e.hostHeader);
+  if(!dest.to.stripHost) e.socket.unshift(e.hostHeader);
 
-  if(backend.from.tls){
+  if(dest.from.tls){
 
     try{
 
       e.socket = new tls.TLSSocket(e.socket,{
-        secureContext: tls.createSecureContext(backend.from.tls),
+        secureContext: tls.createSecureContext(dest.from.tls),
         isServer: true
       });
 
@@ -210,27 +239,85 @@ function* proxy(e,d,hosts,server){
 
   }
 
-  switch(backend.to.proxyProtocol){
+  switch(dest.to.proxyProtocol){
 
     case 1:
-      proxyProtocol.v1(e.socket,socket);
+      proxyProtocol.v1(e.socket,dest.socket);
       break;
 
     case 2:
-      proxyProtocol.v2(e.socket,socket);
+      proxyProtocol.v2(e.socket,dest.socket);
       break;
 
   }
 
-  if(!backend.to.stripProxy) socket.write(e.proxyHeader);
-  if(backend.to.prependHost) socket.write('host: ' + backend.to.prependHost + '\r\n');
+  if(!dest.to.stripProxy) dest.socket.write(e.proxyHeader);
+  if(dest.to.prependHost) dest.socket.write('host: ' + dest.to.prependHost + '\r\n');
 
-  socket.pipe(e.socket).pipe(socket);
-  socket[otherSocket] = e.socket;
-  e.socket[otherSocket] = socket;
+  dest.socket.pipe(e.socket).pipe(dest.socket);
+  dest.socket[otherSocket] = e.socket;
+  e.socket[otherSocket] = dest.socket;
 
-  socket.on('error',onError);
+  dest.socket.on('error',onError);
   e.socket.on('error',onError);
+
+}
+
+getDest = walk.wrap(function*(backends,aliases){
+  var backend,dest,socket,events;
+
+  for(backend of shuffle(backends)){
+
+    if(typeof backend.to == 'string'){
+
+      dest = yield getDest(aliases[backend.to] || [],aliases);
+      if(dest){
+        dest.from = backend.from;
+        return dest;
+      }
+
+    }else{
+
+      if(backend.to.host) socket = net.connect(backend.to.port,backend.to.host);
+      else socket = net.connect(backend.to.port);
+      events = {};
+
+      socket.once('connect',events.connect = Cb());
+      socket.once('error',events.error = Cb());
+      socket.once('close',events.close = Cb());
+
+      events = yield events;
+      if('connect' in events) break;
+      socket = null;
+
+    }
+
+  }
+
+  if(socket){
+    dest = {};
+    dest.to = backend.to;
+    dest.from = backend.from;
+    dest.socket = socket;
+    return dest;
+  }
+
+});
+
+function* shuffle(array){
+  var i = array.length,
+      temp,rand;
+
+  while(i != 0){
+    rand = Math.floor(Math.random() * i);
+    i--;
+
+    temp = array[rand];
+    array[rand] = array[i];
+    array[i] = temp;
+
+    yield temp;
+  }
 
 }
 

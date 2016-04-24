@@ -7,7 +7,7 @@
   "dependencies": {
     "binary-buffer": "^5.1.2",
     "ip": "^1.1.2",
-    "rethinkdb": "^2.3.0",
+    "rethinkdb": "^2.3.1",
     "y-callback": "^1.2.3",
     "y-walk": "^10.0.5"
   },

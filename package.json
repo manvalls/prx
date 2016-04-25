@@ -9,6 +9,7 @@
     "ip": "^1.1.2",
     "rethinkdb": "^2.3.1",
     "y-callback": "^1.2.3",
+    "y-emitter": "^12.4.2",
     "y-walk": "^10.0.5"
   },
   "devDependencies": {

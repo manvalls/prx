@@ -102,13 +102,23 @@ prx.detach();
 }
 ```
 
-Above shown are defaults. You can also use the command line utility, which will use the default options and node's `cluster` module:
+Above shown are defaults. You can also use the command line utility, which will use node's `cluster` module:
 
 ```
 sudo prx
 ```
 
-Using `sudo` grants you permission to use ports `80` and `443`.
+Using `sudo` grants you permission to use ports `80` and `443`. It has the following RethinkDB options:
+
+- `-p <port>`
+- `-h <host>`
+- `-db <database>`
+- `-t <table>`
+- `-usr <username>`
+- `-pwd <password>`
+- `-ca <CA file>`
+
+All options are optional and have defaults whithin RethinkDB itself.
 
 [ci-img]: https://circleci.com/gh/manvalls/prx.svg?style=shield
 [ci-url]: https://circleci.com/gh/manvalls/prx

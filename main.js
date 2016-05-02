@@ -305,18 +305,24 @@ getDest = walk.wrap(function*(backends,aliases){
 });
 
 function* shuffle(array){
-  var i = array.length,
-      temp,rand;
+  var i,j,temp,rand;
 
-  while(i != 0){
-    rand = Math.floor(Math.random() * i);
-    i--;
+  array = array.slice();
 
-    temp = array[rand];
-    array[rand] = array[i];
-    array[i] = temp;
+  for(j = 0;j < 3;j++){
 
-    yield temp;
+    i = array.length;
+    while(i != 0){
+      rand = Math.floor(Math.random() * i);
+      i--;
+
+      temp = array[rand];
+      array[rand] = array[i];
+      array[i] = temp;
+
+      yield temp;
+    }
+
   }
 
 }

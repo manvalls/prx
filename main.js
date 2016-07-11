@@ -220,8 +220,13 @@ function* proxy(e,d,hosts,server,aliases){
     return;
   }
 
-  e.socket.unshift(e.rest);
-  if(!dest.to.stripHost) e.socket.unshift(e.hostHeader);
+  try{
+    e.socket.unshift(e.rest);
+    if(!dest.to.stripHost) e.socket.unshift(e.hostHeader);
+  }catch(err){
+    dest.socket.destroy();
+    return;
+  }
 
   if(dest.from.tls){
 
@@ -233,6 +238,7 @@ function* proxy(e,d,hosts,server,aliases){
       });
 
     }catch(err){
+      dest.socket.destroy();
       e.socket.destroy();
       return;
     }
@@ -258,6 +264,8 @@ function* proxy(e,d,hosts,server,aliases){
   dest.socket[otherSocket] = e.socket;
   e.socket[otherSocket] = dest.socket;
 
+  dest.socket.on('close',onError);
+  e.socket.on('close',onError);
   dest.socket.on('error',onError);
   e.socket.on('error',onError);
 

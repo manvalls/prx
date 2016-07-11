@@ -39,6 +39,8 @@ function onConnection(socket){
   socket.on('data',onData);
   socket.on('error',onError);
   socket.on('timeout',onError);
+  socket.on('close',onError);
+  socket.on('end',onError);
 }
 
 function onError(){
@@ -50,6 +52,8 @@ function detach(socket){
   socket.removeListener('data',onData);
   socket.removeListener('error',onError);
   socket.removeListener('timeout',onError);
+  socket.removeListener('close',onError);
+  socket.removeListener('end',onError);
   socket.setTimeout(0);
   socket.pause();
 }

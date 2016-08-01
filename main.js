@@ -68,6 +68,7 @@ function* processPrx(prx,host,opt){
 
   while(true) try{
     prx[connection] = conn = yield r.connect(host || '127.0.0.1');
+    conn.on('error',noop);
     conn.use(opt.database);
 
     prx[feed] = cursor = yield r.table(opt.tables.rules).changes({includeInitial: true}).run(conn);
@@ -186,6 +187,8 @@ function* processPrx(prx,host,opt){
   }
 
 }
+
+function noop(){}
 
 function find(backend){
   return backend.id == this.id;

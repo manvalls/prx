@@ -224,7 +224,6 @@ function* proxy(e,d,hosts,server,aliases){
   }
 
   try{
-    e.socket.unshift(e.rest);
     if(!dest.to.stripHost) e.socket.unshift(e.hostHeader);
   }catch(err){
     dest.socket.destroy();

@@ -5,7 +5,6 @@
   "main": "main.js",
   "bin": "bin.js",
   "dependencies": {
-    "binary-buffer": "^5.1.2",
     "ip": "^1.1.2",
     "rethinkdb": "^2.3.1",
     "y-callback": "^1.2.3",

@@ -1,10 +1,9 @@
 var Emitter = require('y-emitter'),
-    BinaryBuffer = require('binary-buffer'),
     walk = require('y-walk'),
+    Cb = require('y-callback'),
     emitter = Symbol(),
-    buffer = Symbol(),
     hostsMap = Symbol(),
-    processSocket;
+    processSocket,read;
 
 function bindServer(server,hosts){
   var em = new Emitter();
@@ -32,11 +31,9 @@ function onConnection(socket){
     return;
   }
 
-  socket[buffer] = new BinaryBuffer();
-  processSocket(socket[buffer],socket,em);
-
+  processSocket(socket,em);
   socket.setTimeout(1000);
-  socket.on('data',onData);
+
   socket.on('error',onError);
   socket.on('timeout',onError);
   socket.on('close',onError);
@@ -49,7 +46,6 @@ function onError(){
 }
 
 function detach(socket){
-  socket.removeListener('data',onData);
   socket.removeListener('error',onError);
   socket.removeListener('timeout',onError);
   socket.removeListener('close',onError);
@@ -58,12 +54,7 @@ function detach(socket){
   socket.pause();
 }
 
-function onData(data){
-  this[buffer].write(data);
-  if(this[buffer].bytesSinceFlushed > 60e3) onError.call(this);
-}
-
-processSocket = walk.wrap(function*(buffer,socket,emitter){
+processSocket = walk.wrap(function*(socket,emitter){
   var queue = [],
       proxy = [],
       b,pb,line,m,host,
@@ -71,7 +62,7 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
 
   while(true){
 
-    b = yield buffer.read(new Buffer(5));
+    b = yield read(socket,5);
     proxy.push(b);
 
     if(b.toString() == 'PROXY'){
@@ -79,20 +70,20 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
       // PROXY protocol version 1
 
       do{
-        b = yield buffer.read(new Buffer(1));
+        b = yield read(socket,1);
         proxy.push(b);
       }while(b[0] != 0x0d);
 
-      proxy.push(yield buffer.read(new Buffer(1)));
+      proxy.push(yield read(socket,1));
 
     }else if(b.toString('hex') == '0d0a0d0a00'){
 
       // PROXY protocol version 2
 
-      proxy.push(yield buffer.read(new Buffer(9)));
-      b = yield buffer.read(new Buffer(2));
+      proxy.push(yield read(socket,9));
+      b = yield read(socket,2);
       proxy.push(b);
-      proxy.push(yield buffer.read(new Buffer(b.readUInt16BE(0))));
+      proxy.push(yield read(socket,b.readUInt16BE(0)));
 
     }else break;
 
@@ -111,7 +102,7 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
       // length: 2 bytes
 
       length = b.readUInt16BE(3);
-      b = yield buffer.read(new Buffer(length));
+      b = yield read(socket,length);
       queue.push(b);
       i = 0;
 
@@ -166,23 +157,14 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
         i++;
       }
 
-      if(b[i] == 0x0d){
-        line = Buffer.concat(line);
-        line = line.toString().trim().toLowerCase();
-        if(m = line.match(/^host:\s*([a-z0-9\-._~!$&'()*+,;=%]*?)(:\d*)?$/)){
-          host = m[1];
-          if(!host.match(/^\d+\.\d+\.\d+\.\d+$/)) break;
-        }
-      }
-
     }
 
     if(host == null) while(true){
 
-      b = yield buffer.read(new Buffer(1));
+      b = yield read(socket,1);
       while(b[0] != 0x0d){
         line.push(b);
-        b = yield buffer.read(new Buffer(1));
+        b = yield read(socket,1);
       }
 
       line = Buffer.concat(line);
@@ -190,9 +172,13 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
       queue.push(b);
 
       line = line.toString().trim().toLowerCase();
-      if(m = line.match(/^host:\s*([a-z0-9\-._~!$&'()*+,;=%]*?)(:\d*)?$/)){
+
+      if(
+        (m = line.match(/^host:\s*([a-z0-9\-._~!$&'()*+,;=%]*?)(:\d*)?$/)) &&
+        !m[1].match(/^\d+\.\d+\.\d+\.\d+$/)
+      ){
         host = m[1];
-        if(!host.match(/^\d+\.\d+\.\d+\.\d+$/)) break;
+        break;
       }
 
       line = [];
@@ -209,9 +195,20 @@ processSocket = walk.wrap(function*(buffer,socket,emitter){
     socket: socket,
     host: host,
     proxyHeader: pb,
-    hostHeader: b,
-    rest: yield buffer.read(new Buffer(buffer.bytesSinceFlushed - b.length - pb.length))
+    hostHeader: b
   });
+
+});
+
+read = walk.wrap(function*(socket,n){
+  var cb,data;
+
+  while(true){
+    data = socket.read(n);
+    if(data) return data;
+    socket.once('readable',cb = Cb());
+    yield cb;
+  }
 
 });
 

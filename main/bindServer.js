@@ -24,8 +24,7 @@ function onConnection(socket){
       socket: socket,
       host: '',
       proxyHeader: new Buffer(0),
-      hostHeader: new Buffer(0),
-      rest: new Buffer(0)
+      hostHeader: new Buffer(0)
     });
 
     return;

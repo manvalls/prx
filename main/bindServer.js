@@ -159,7 +159,7 @@ processSocket = walk.wrap(function*(socket,emitter){
 
     }
 
-    if(host == null) while(true){
+    while(true){
 
       b = yield read(socket,1);
       while(b[0] != 0x0d){

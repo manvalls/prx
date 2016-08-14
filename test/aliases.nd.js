@@ -69,7 +69,7 @@ t('Aliases',function*(){
   s2.on('request',(req,res) => res.end('hi'));
   s3.on('request',(req,res) => res.end('ho'));
 
-  yield wait(1000);
+  yield wait(500);
 
   for(i = 0;i < 20;i++){
     http.get('http://127.0.0.1:8888/',cb = Cb());
@@ -106,8 +106,8 @@ t('Aliases',function*(){
     }
   ]).run(conn);
 
-  yield wait(1000);
-  
+  yield wait(500);
+
   for(i = 0;i < 20;i++){
     http.get('http://127.0.0.1:8888/',cb = Cb());
     assert.equal(yield (yield cb)[0],'ho');

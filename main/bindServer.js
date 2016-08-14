@@ -148,12 +148,16 @@ processSocket = walk.wrap(function*(socket,emitter){
 
     i = 0;
     queue.pop();
+    line = [];
+
     while(i < b.length){
 
-      line = [];
-      while(b[i] != 0x0d && i < b.length){
+      if(b[i] != 0x0d){
         line.push(b.slice(i,i + 1));
         i++;
+      }else{
+        line = [];
+        i += 2;
       }
 
     }

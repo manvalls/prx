@@ -78,4 +78,12 @@ module.exports = desc => t(desc,function*(){
   req.write(new Buffer([22,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0]));
   yield (yield cb)[0];
 
+  req = net.connect({
+    host: '127.0.0.1',
+    port: 8006
+  },cb = Cb());
+
+  req.write('\r\n12345');
+  yield cb;
+
 });

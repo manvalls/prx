@@ -1,6 +1,6 @@
 {
   "name": "prx",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "A simple reverse proxy",
   "main": "main.js",
   "bin": "bin.js",

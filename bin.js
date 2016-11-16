@@ -10,31 +10,31 @@ var cluster = require('cluster'),
 for(i = 0;i < process.argv.length;i++) switch(process.argv[i]){
 
   case '-h':
-    host = process.argv[i + 1];
+    host = process.argv[++i];
     break;
 
   case '-t':
-    table = process.argv[i + 1];
+    table = process.argv[++i];
     break;
 
   case '-db':
-    db = process.argv[i + 1];
+    db = process.argv[++i];
     break;
 
   case '-p':
-    port = process.argv[i + 1];
+    port = process.argv[++i];
     break;
 
   case '-usr':
-    user = process.argv[i + 1];
+    user = process.argv[++i];
     break;
 
   case '-pwd':
-    password = process.argv[i + 1];
+    password = process.argv[++i];
     break;
 
   case '-ca':
-    cas.push(process.argv[i + 1]);
+    cas.push(process.argv[++i]);
     break;
 
 }

@@ -203,7 +203,8 @@ exports.servers = desc => t(desc,function*(){
     hostHttp = http.createServer(),
     sampleHttps = https.createServer({
       key: fs.readFileSync(__dirname + '/key.pem'),
-      cert: fs.readFileSync(__dirname + '/cert.pem')
+      cert: fs.readFileSync(__dirname + '/cert.pem'),
+      passphrase: 'foobar'
     })
   );
 
@@ -234,6 +235,6 @@ exports.servers = desc => t(desc,function*(){
 
 exports.prx = desc => t(desc,function(){
   exports.detachers.prx.add(
-    new Prx()
+    new Prx(null, {tls: {passphrase: 'foobar'}})
   );
 });

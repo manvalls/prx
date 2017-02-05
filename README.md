@@ -93,11 +93,14 @@ prx.detach();
 
 `rethinkdbHost` is the host of the RethinkDB server, `127.0.0.1` by default. See `r.connect()` for more options. `options` is an optional object with the following structure:
 
-```json
+```js
 {
   "database": "prx",
   "tables": {
     "rules": "rules"
+  },
+  "tls": {
+    // Default TLS options, e.g passphrase
   }
 }
 ```
@@ -118,7 +121,9 @@ Using `sudo` grants you permission to use ports `80` and `443`. It has the follo
 - `-pwd <password>`
 - `-ca <CA file>`
 
-All options are optional and have defaults whithin RethinkDB itself.
+All options are optional and have defaults whithin RethinkDB itself. You may also specify the following default TLS options:
+
+- `--tls-pass <passphrase>`
 
 [ci-img]: https://circleci.com/gh/manvalls/prx.svg?style=shield
 [ci-url]: https://circleci.com/gh/manvalls/prx

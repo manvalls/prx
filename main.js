@@ -54,6 +54,7 @@ function fillOpt(opt){
   opt.database = opt.database || 'prx';
   opt.tables = opt.tables || {};
   opt.tables.rules = opt.tables.rules || 'rules';
+  opt.tls = opt.tls || {};
   return opt;
 }
 
@@ -163,6 +164,10 @@ function* processPrx(prx,host,opt){
             backends: [],
             host: change.new_val.from.host || ''
           };
+
+          if(change.new_val.from.tls) for(key of Object.keys(opt.tls)) if(!(key in change.new_val.from.tls)){
+            change.new_val.from.tls[key] = opt.tls[key];
+          }
 
           for(i = 0;i < w;i++) h.backends.push(change.new_val);
 

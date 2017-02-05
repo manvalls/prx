@@ -4,7 +4,7 @@ var cluster = require('cluster'),
     fs = require('fs'),
     Prx = require('./main.js'),
     cas = [],
-    i,host,port,table,db,user,password,
+    i,host,port,table,db,user,password,passphrase,
     ca,opt;
 
 for(i = 0;i < process.argv.length;i++) switch(process.argv[i]){
@@ -31,6 +31,10 @@ for(i = 0;i < process.argv.length;i++) switch(process.argv[i]){
 
   case '-pwd':
     password = process.argv[++i];
+    break;
+
+  case '--tls-pass':
+    passphrase = process.argv[++i];
     break;
 
   case '-ca':
@@ -60,32 +64,39 @@ if(cas.length){
 
 
 if(cluster.isMaster) walk(function*(){
-  var cpus = require('os').cpus().length;
+  var cpus = require('os').cpus().length,
+      extra = {
+        database: db,
+        tables: {
+          rules: table
+        }
+      };
 
-  console.log(`\n\n\t╒══╡ PRX v${require('./package.json').version} ╞══╕\n`);
+  console.log(`\n\n\t\t╒══╡ PRX v${require('./package.json').version} ╞══╕\n`);
 
   console.log(' RethinkDB options:');
-  console.log(`  host (-h)\t\t${host}`);
-  console.log(`  port (-p)\t\t${port}`);
-  console.log(`  database (-db)\t${db}`);
-  console.log(`  table (-t)\t\t${table}`);
-  console.log(`  user (-usr)\t\t${user}`);
-  console.log(`  password (-pwd)\t${password.replace(/[^]/g,'*')}`);
+  console.log(`  host (-h)\t\t\t${host}`);
+  console.log(`  port (-p)\t\t\t${port}`);
+  console.log(`  database (-db)\t\t${db}`);
+  console.log(`  table (-t)\t\t\t${table}`);
+  console.log(`  user (-usr)\t\t\t${user}`);
+  console.log(`  password (-pwd)\t\t${password.replace(/[^]/g,'*')}`);
 
   if(cas.length) for(ca of cas){
-    console.log(`  CA (-ca)\t\t${ca}`);
+    console.log(`  CA (-ca)\t\t\t${ca}`);
   }
+
+  console.log('\n');
+
+  console.log(' TLS default options:');
+  console.log(`  passphrase (--tls-pass)\t${(passphrase || '').replace(/[^]/g,'*')}`);
 
   console.log('\n');
 
   try{
 
-    yield Prx.init(opt,{
-      database: db,
-      tables: {
-        rules: table
-      }
-    });
+    if(passphrase) extra.tls = {passphrase};
+    yield Prx.init(opt,extra);
 
   }catch(e){
     console.error('ERROR: Could not connect to RethinkDB\n');

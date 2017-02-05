@@ -5,16 +5,16 @@
   "main": "main.js",
   "bin": "bin.js",
   "dependencies": {
-    "ip": "^1.1.3",
-    "rethinkdb": "^2.3.2",
-    "y-callback": "^1.2.3",
-    "y-emitter": "^12.4.2",
-    "y-walk": "^10.0.6"
+    "ip": "^1.1.4",
+    "rethinkdb": "^2.3.3",
+    "y-callback": "^1.2.4",
+    "y-emitter": "^12.4.5",
+    "y-walk": "^10.0.7"
   },
   "devDependencies": {
-    "detacher": "^2.0.4",
-    "u-test": "^3.7.5",
-    "y-timers": "^1.1.5"
+    "detacher": "^2.0.8",
+    "u-test": "^3.8.11",
+    "y-timers": "^1.1.6"
   },
   "scripts": {
     "test": "u-test"

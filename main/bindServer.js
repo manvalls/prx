@@ -149,18 +149,7 @@ processSocket = walk.wrap(function*(socket,emitter){
     i = 0;
     queue.pop();
     line = [];
-
-    while(i < b.length){
-
-      if(b[i] != 0x0d){
-        line.push(b.slice(i,i + 1));
-        i++;
-      }else{
-        line = [];
-        i += 2;
-      }
-
-    }
+    socket.unshift(b);
 
     while(true){
 
@@ -173,6 +162,7 @@ processSocket = walk.wrap(function*(socket,emitter){
       line = Buffer.concat(line);
       queue.push(line);
       queue.push(b);
+      queue.push(yield read(socket,1));
 
       line = line.toString().trim().toLowerCase();
 

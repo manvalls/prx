@@ -1,10 +1,10 @@
 # PRX
 [![Build Status][ci-img]][ci-url] [![Coverage Status][cover-img]][cover-url]
 
-PRX is a simple TCP reverse proxy with support for HAProxy's PROXY protocol versions 1 and 2 and out of the box host detection support for HTTP (including WebSockets) and TLS. For other types of streams, send the following string either at the start of it or after a CRLF for PRX to detect the host:
+PRX is a simple TCP reverse proxy with support for HAProxy's PROXY protocol versions 1 and 2 and out of the box host detection support for HTTP (including WebSockets) and TLS. For other types of streams, send the following string at the start of it for PRX to detect the host:
 
 ```
-host: your.host.com\r\n
+host: your.host.com\r\n\r\n
 ```
 
 PRX's configuration is kept inside a RethinkDB server and can be updated at runtime. It consits of a list of rules with the following format:
@@ -80,7 +80,7 @@ You may also use string aliases, e.g:
 }
 ```
 
-As long as a rule is found in the database PRX will try to connect to it when it needs to do so, no matter how many times it has failed in the past. It is the user's duty to remove a rule from the database when it no longer applies. PRX's API is pretty simple:
+As long as a rule is found in the database PRX will try to connect to it when it needs to do so, with automatic failover, no matter how many times it has failed in the past. It is the user's duty to remove a rule from the database when it no longer applies. PRX's API is pretty simple:
 
 ```javascript
 var Prx = require('prx'),

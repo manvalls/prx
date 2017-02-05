@@ -1,6 +1,6 @@
 machine:
   node:
-    version: 7.1.0
+    version: 7.5.0
   hosts:
     sample.host.com: 127.0.0.1
     host.com: 127.0.0.1

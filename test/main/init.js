@@ -171,6 +171,7 @@ exports.rules = desc => t(desc,function*(){
         }
       },
       to: {
+        XFH: true,
         port: 8001,
         host: '127.0.0.1'
       }

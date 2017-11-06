@@ -1,6 +1,6 @@
 var Emitter = require('y-emitter'),
     walk = require('y-walk'),
-    Cb = require('y-callback'),
+    read = require('./read'),
     emitter = Symbol(),
     hostsMap = Symbol(),
     processSocket,read;
@@ -190,18 +190,6 @@ processSocket = walk.wrap(function*(socket,emitter){
     proxyHeader: pb,
     hostHeader: b
   });
-
-});
-
-read = walk.wrap(function*(socket,n){
-  var cb,data;
-
-  while(true){
-    data = socket.read(n);
-    if(data) return data;
-    socket.once('readable',cb = Cb());
-    yield cb;
-  }
 
 });
 

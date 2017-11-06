@@ -6,6 +6,7 @@ var r = require('rethinkdb'),
     Cb = require('y-callback'),
     proxyProtocol = require('./main/proxyProtocol.js'),
     bindServer = require('./main/bindServer.js'),
+    injectXFH = require('./main/injectXFH.js'),
     otherSocket = Symbol(),
     connection = Symbol(),
     walker = Symbol(),
@@ -201,7 +202,9 @@ function find(backend){
 
 function* proxy(e,d,hosts,server,aliases){
   var parts,target,backend,
-      host,dest;
+      host,dest,socket;
+
+  socket = e.socket;
 
   if(hosts[e.host || '']) target = hosts[e.host || ''];
   else{
@@ -266,6 +269,16 @@ function* proxy(e,d,hosts,server,aliases){
 
   if(!dest.to.stripProxy) dest.socket.write(e.proxyHeader);
   if(dest.to.prependHost) dest.socket.write('host: ' + dest.to.prependHost + '\r\n');
+
+  if(dest.to.XFH){
+    try{
+      yield injectXFH(socket,e.socket,dest.socket);
+    }catch(err){
+      dest.socket.destroy();
+      e.socket.destroy();
+      return;
+    }
+  }
 
   dest.socket.pipe(e.socket).pipe(dest.socket);
   dest.socket[otherSocket] = e.socket;
